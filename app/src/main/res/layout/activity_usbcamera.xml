@@ -1,0 +1,570 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mainMonitorLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="horizontal">
+
+    <TextView
+        android:id="@+id/cameraDisconnectedtextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:layout_weight="1"
+        android:text="Camera Disconnected"
+        android:textColor="@android:color/white"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <LinearLayout
+        android:id="@+id/llayout_contrast"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        app:layout_constraintStart_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp"
+            android:text="对比度(contrast)"
+            android:textColor="@color/colorWhite"
+            android:visibility="visible" />
+
+        <SeekBar
+            android:id="@+id/seekbar_contrast"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/llayout_brightness"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/llayout_contrast"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        app:layout_constraintStart_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingTop="7dp"
+            android:paddingBottom="7dp"
+            android:text="亮度(brightness)"
+            android:textColor="@color/colorWhite" />
+
+        <SeekBar
+            android:id="@+id/seekbar_brightness"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="2" />
+    </LinearLayout>
+
+    <Switch
+        android:id="@+id/switch_rec_voice"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignStart="@+id/llayout_brightness"
+        android:layout_alignLeft="@+id/llayout_brightness"
+        android:checked="false"
+        android:text="closeVoice"
+        android:textColor="@color/colorWhite"
+        android:visibility="invisible"
+        app:layout_constraintStart_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/reconnectButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reconnect Camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.jiangdg.usbcamera.utils.ZoomLayout
+        android:id="@+id/zoomLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <com.serenegiant.usb.widget.UVCCameraTextureView
+            android:id="@+id/camera_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:visibility="visible"
+            tools:visibility="visible" />
+
+        <ImageView
+            android:id="@+id/imageView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="invisible"
+            app:srcCompat="@drawable/rule_of_thirds" />
+
+    </com.jiangdg.usbcamera.utils.ZoomLayout>
+
+    <ImageButton
+        android:id="@+id/fpsButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintStart_toEndOf="@+id/ScreenResolutionButton"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <ImageButton
+        android:id="@+id/ScreenResolutionButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintStart_toEndOf="@+id/batteryImageView"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/screenResolutionTextView"
+        android:layout_width="69dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="Monitor Resolution"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/ScreenResolutionButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/fpsTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="FPS"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/fpsButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/fpsValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="24"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/fpsButton"
+        app:layout_constraintStart_toStartOf="@+id/fpsButton" />
+
+    <ImageButton
+        android:id="@+id/irisButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintStart_toEndOf="@+id/fpsButton"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/irisTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="IRIS"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toEndOf="@+id/fpsButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/irisValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="f21.5"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/irisButton"
+        app:layout_constraintStart_toEndOf="@+id/fpsButton" />
+
+    <TextView
+        android:id="@+id/batteryPercentageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="16dp"
+        android:layout_marginEnd="4dp"
+        android:layout_marginBottom="4dp"
+        android:text="25%"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintBottom_toBottomOf="@+id/batteryImageView"
+        app:layout_constraintEnd_toStartOf="@+id/ScreenResolutionButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/isoButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/isoTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="ISO"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/isoButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/isoValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="3200"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/isoButton"
+        app:layout_constraintStart_toStartOf="@+id/isoButton" />
+
+    <ImageButton
+        android:id="@+id/tintButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintEnd_toStartOf="@+id/isoButton"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/tintTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="TINT"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/tintButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tintValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="13"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/tintButton"
+        app:layout_constraintStart_toStartOf="@+id/tintButton" />
+
+    <ImageButton
+        android:id="@+id/wbButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintEnd_toStartOf="@+id/tintButton"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <TextView
+        android:id="@+id/wbTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="WB"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/wbButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/wbValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="4850K"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/wbButton"
+        app:layout_constraintStart_toStartOf="@+id/wbButton" />
+
+    <ImageButton
+        android:id="@+id/shutterButton"
+        android:layout_width="69dp"
+        android:layout_height="41dp"
+        android:background="@drawable/custom_button"
+        app:layout_constraintEnd_toStartOf="@+id/wbButton"
+        app:layout_constraintTop_toTopOf="parent"
+        tools:ignore="SpeakableTextPresentCheck"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/shutterTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:text="SHUTTER"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        app:layout_constraintStart_toStartOf="@+id/shutterButton"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/shutterValueTextView"
+        android:layout_width="60dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
+        android:text="1/40"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toBottomOf="@+id/shutterButton"
+        app:layout_constraintStart_toStartOf="@+id/shutterButton" />
+
+    <ImageView
+        android:id="@+id/batteryImageView"
+        android:layout_width="97dp"
+        android:layout_height="41dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/battery_empty" />
+
+    <ImageView
+        android:id="@+id/bottomBarImageView"
+        android:layout_width="match_parent"
+        android:layout_height="92dp"
+        android:scaleX="100"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/universal_pressed" />
+
+    <SeekBar
+        android:id="@+id/isoSeekBar"
+        android:layout_width="521dp"
+        android:layout_height="50dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:max="24"
+        android:progress="3"
+        android:progressDrawable="@drawable/red_scrubber_progress"
+        android:thumb="@drawable/red_scrubber_control"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="@+id/bottomBarImageView"
+        app:layout_constraintStart_toEndOf="@+id/isoRightArrowButton" />
+
+    <SeekBar
+        android:id="@+id/wbSeekBar"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:max="150"
+        android:progress="3"
+        android:progressDrawable="@drawable/red_scrubber_progress"
+        android:thumb="@drawable/red_scrubber_control"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tintLeftArrowButton"
+        app:layout_constraintStart_toEndOf="@+id/isoRightArrowButton" />
+
+    <ImageButton
+        android:id="@+id/isoRightArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/isoValueChangeTextView" />
+
+    <ImageButton
+        android:id="@+id/wbRightArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/isoValueChangeTextView" />
+
+    <ImageButton
+        android:id="@+id/shutterRightArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/shutterValueChangeTextView" />
+
+    <ImageButton
+        android:id="@+id/tintRightArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent" />
+
+    <ImageButton
+        android:id="@+id/isoLeftArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/bottomBarImageView" />
+
+    <ImageButton
+        android:id="@+id/wbLeftArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/bottomBarImageView" />
+
+    <ImageButton
+        android:id="@+id/shutterLeftArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="@+id/bottomBarImageView" />
+
+    <ImageButton
+        android:id="@+id/tintLeftArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="24dp"
+        android:background="@drawable/custom_arrow_button"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tintValueChangeTextView" />
+
+    <TextView
+        android:id="@+id/wbValueChangeTextView"
+        android:layout_width="77dp"
+        android:layout_height="49dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:text="4850K"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/isoLeftArrowButton" />
+
+    <TextView
+        android:id="@+id/shutterValueChangeTextView"
+        android:layout_width="100dp"
+        android:layout_height="49dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:text="1/50"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/isoLeftArrowButton" />
+
+    <TextView
+        android:id="@+id/tintValueChangeTextView"
+        android:layout_width="50dp"
+        android:layout_height="49dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:text="13"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/tintRightArrowButton" />
+
+    <TextView
+        android:id="@+id/isoValueChangeTextView"
+        android:layout_width="77dp"
+        android:layout_height="49dp"
+        android:layout_marginBottom="24dp"
+        android:gravity="center"
+        android:text="3200"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/isoLeftArrowButton" />
+
+    <ImageView
+        android:id="@+id/mockView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/bottomBarImageView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/shutterButton"
+        app:srcCompat="@drawable/universal_default" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/isoGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:constraint_referenced_ids="isoRightArrowButton,isoLeftArrowButton,isoValueChangeTextView,isoSeekBar"
+        tools:visibility="invisible" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/wbGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:constraint_referenced_ids="wbRightArrowButton,wbSeekBar,tintRightArrowButton,wbLeftArrowButton,tintLeftArrowButton,wbValueChangeTextView,tintValueChangeTextView"
+        tools:visibility="invisible" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/shutterGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:constraint_referenced_ids="shutterValueChangeTextView,shutterLeftArrowButton,shutterRightArrowButton"
+        tools:visibility="visible" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/cameraSettingsGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:constraint_referenced_ids="fpsButton,fpsTextView,fpsValueTextView,irisButton,irisTextView,irisValueTextView,batteryPercentageTextView,isoButton,isoTextView,isoValueTextView,tintButton,tintTextView,tintValueTextView,wbButton,wbTextView,wbValueTextView,shutterButton,shutterTextView,shutterValueTextView,batteryImageView"
+        tools:visibility="visible" />
+
+    <androidx.constraintlayout.widget.Group
+        android:id="@+id/disconnectedGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="invisible"
+        app:constraint_referenced_ids="cameraDisconnectedtextView,reconnectButton"
+        tools:visibility="visible" />
+
+
+</androidx.constraintlayout.widget.ConstraintLayout>
