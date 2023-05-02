@@ -1,1 +1,4 @@
 include ':app', ':libusbcamera'
+
+include ':openCVLibrary343'
+include ':opencv'

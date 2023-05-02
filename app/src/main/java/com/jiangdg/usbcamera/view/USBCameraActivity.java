@@ -15,6 +15,11 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
 import android.hardware.usb.UsbDevice;
 import android.os.Bundle;
 import android.os.Looper;
@@ -27,6 +32,7 @@ import android.view.WindowManager;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -34,6 +40,12 @@ import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ToggleButton;
+
+import com.github.mikephil.charting.charts.LineChart;
+import com.github.mikephil.charting.data.Entry;
+import com.github.mikephil.charting.data.LineData;
+import com.github.mikephil.charting.data.LineDataSet;
 import com.jiangdg.usbcamera.R;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -54,11 +66,21 @@ import com.serenegiant.usb.common.AbstractUVCCameraHandler;
 import com.serenegiant.usb.widget.CameraViewInterface;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.Core;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfFloat;
+import org.opencv.core.MatOfInt;
+import org.opencv.imgproc.Imgproc;
 
 /**
  * UVCCamera use demo
@@ -86,7 +108,9 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
     BluetoothManager bluetoothManager;
     BluetoothAdapter bluetoothAdapter;
-
+    private Thread thread;
+    private Thread histogramThread;
+    private ImageView falseColorImageView;
     private ImageButton screenResultionButton;
     private ImageButton isoButton;
     private ImageView batteryImageView;
@@ -96,6 +120,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private Group activeGroup;
     private boolean groupActivated;
     private Group isoGroup;
+    private Group frameGroup;
     private ZoomLayout zoomLayout;
     private BluetoothDevice cameraBluetooth;
     private BluetoothGattCallback bluetoothGattCallback;
@@ -105,6 +130,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private TextView isoValueTextView;
     private TextView isoValueChangeTextView;
     private SeekBar isoSeekBar;
+    private SeekBar frameGuideSeekBar;
     private ImageButton isoLeftArrowButton;
     private ImageButton isoRightArrowButton;
     private ImageButton wbLeftArrowButton;
@@ -124,14 +150,46 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private TextView shutterValueChangeTextView;
     private ImageButton shutterLeftArrowButton;
     private ImageButton shutterRightArrowButton;
+    private ImageButton falseColorButton;
+    private TextView falseColorTextView;
+    private ImageButton zebraButton;
+    private TextView zebraTextView;
+    private ImageButton histogramButton;
+    private TextView histogramTextView;
+    private ImageButton thirdsButton;
+    private TextView thirdsTextView;
+    private ImageButton frameGuidesButton;
+    private TextView frameGuidesTextView;
+    private Group moreOptionsGroup;
     private Group shutterGroup;
     private ImageButton irisButton;
     private Group cameraSettingsGroup;
     private Button reconnectButton;
     private Group disconnectedGroup;
+    private ImageButton moreOptionsButton;
+    private ToggleButton falseColorToggleButton;
+    private ToggleButton zebraToggleButton;
+    private ToggleButton histogramToggleButton;
+    private ToggleButton ruleOfThirdsToggleButton;
+    private ToggleButton activatedSwitch;
+    private ToggleButton frameGuidesToggleButton;
+    private ImageButton frameGuideLeftArrowButton;
+    private ImageButton frameGuideRightArrowButton;
+    private TextView currentFrameGuideTextView;
+    private ImageView ruleOfThirdsImageView;
+    private ImageView frameGuideImageView;
+    private int displayMode = 0;
     private boolean[] primaryButtonsStateArray = new boolean[3];
     private boolean primaryButtonsInitialized = false;
     private ConstraintLayout constraintLayout;
+    private Mat[] zebraPatternImages;
+    private int currentZebraIndex = 0;
+    private LineChart histogramLineChart;
+    private Mat frameMat;
+    private boolean histogramThreadStarted = false;
+    private Bitmap frameBitmap;
+    private int looperFailedAttempts;
+    private int bitwiseFailedAttempts;
     private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
 
         @Override
@@ -151,6 +209,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             if (isRequest) {
                 isRequest = false;
                 mCameraHelper.closeCamera();
+                thread.interrupt();
+                histogramThread.interrupt();
                 showShortMsg(device.getDeviceName() + " is out");
             }
         }
@@ -175,8 +235,11 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                         }
                         Looper.prepare();
                         if(mCameraHelper != null && mCameraHelper.isCameraOpened()) {
+
+                            // start thread
                             mSeekBrightness.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_BRIGHTNESS));
                             mSeekContrast.setProgress(mCameraHelper.getModelValue(UVCCameraHelper.MODE_CONTRAST));
+
                         }
                         Looper.loop();
                     }
@@ -187,6 +250,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         @Override
         public void onDisConnectDev(UsbDevice device) {
             showShortMsg("disconnecting");
+            thread.interrupt();
+            histogramThread.interrupt();
         }
     };
 
@@ -198,6 +263,161 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         setContentView(R.layout.activity_usbcamera);
         ButterKnife.bind(this);
         initView();
+        OpenCVLoader.initDebug();
+        Mat falseColorMap = new Mat(256, 1, CvType.CV_8UC3);
+        for (int i = 0; i<256; i++){
+            if (i > 233) {
+                falseColorMap.put(i, 0, 255, 0, 0);
+            } else if (i > 227) {
+
+                falseColorMap.put(i, 0, 255, 255, 0);
+
+            } else if (i > 160) {
+                if (i>212){
+                    int factor = (227-i)/(227-212);
+                    int red = (factor*200 + (1- factor)*255);
+                    int green = (factor*200 + (1- factor)*255);
+                    int blue = (factor*200 + (1- factor)*0);
+                    falseColorMap.put(i, 0, red,green,blue);
+                }
+                else {falseColorMap.put(i, 0, 200, 200, 200);}
+
+
+
+
+            } else if (i > 127){
+                if (i>150){
+                    int factor = (160-i)/(160-150);
+                    int red = (factor*251 + (1- factor)*200);
+                    int green = (factor*144 + (1- factor)*200);
+                    int blue = (factor*139 + (1- factor)*200);
+                    falseColorMap.put(i, 0, red,green,blue);
+                }
+                else {
+                    falseColorMap.put(i,0,251, 144, 139);
+                }
+
+
+
+            }
+            else if (i >120){
+
+                falseColorMap.put(i,0,100, 100, 100);
+            }
+            else if (i > 85){
+                if (i>114){
+                    int factor = (120-i)/(120-114);
+                    int red = (factor*88 + (1- factor)*100);
+                    int green = (factor*151 + (1- factor)*100);
+                    int blue = (factor*66 + (1- factor)*100);
+                    falseColorMap.put(i, 0, red,green,blue);
+                }
+                else {falseColorMap.put(i,0,88, 151, 66);}
+
+            }
+            else if (i > 25.5){
+
+                if (i>75){
+                    int factor = (85-i)/(85-75);
+                    int red = (factor*40 + (1- factor)*88);
+                    int green = (factor*40 + (1- factor)*151);
+                    int blue = (factor*40 + (1- factor)*66);
+                    falseColorMap.put(i, 0, red,green,blue);
+                }
+                else {falseColorMap.put(i,0,40, 40, 40);}
+
+
+
+
+            }
+            else if (i > 16){
+
+                falseColorMap.put(i,0,0, 0, 255);
+            }
+            else {
+                if (i>9){
+                    int factor = (16-i)/(16-9);
+                    int red = (factor*100 + (1- factor)*0);
+                    int green = (factor*0 + (1- factor)*0);
+                    int blue = (factor*100 + (1- factor)*255);
+                    falseColorMap.put(i, 0, red,green,blue);
+                }
+                else {
+                    falseColorMap.put(i,0,100, 0, 100);
+                }
+
+
+
+            }
+        }
+
+        // 6 Zebra color maps from 75% to 100%
+
+        // 75%
+        Mat zebraColorMap0 = new Mat(256, 1, CvType.CV_8UC3);
+
+        // 80%
+        Mat zebraColorMap1 = new Mat(256, 1, CvType.CV_8UC3);
+
+        // 85%
+        Mat zebraColorMap2 = new Mat(256, 1, CvType.CV_8UC3);
+
+        // 90%
+        Mat zebraColorMap3 = new Mat(256, 1, CvType.CV_8UC3);
+
+        // 95%
+        Mat zebraColorMap4 = new Mat(256, 1, CvType.CV_8UC3);
+
+        //100%
+        Mat zebraColorMap5 = new Mat(256, 1, CvType.CV_8UC3);
+
+        for (int i = 0; i<256; i++){
+            if (i>246){
+                zebraColorMap5.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap5.put(i, 0, 255, 255, 255);
+
+            }
+            if (i>245){
+                zebraColorMap4.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap4.put(i, 0, 255, 255, 255);
+
+            }
+            if (i>244){
+                zebraColorMap3.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap3.put(i, 0, 255, 255, 255);
+
+            }
+            if (i>243){
+                zebraColorMap2.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap2.put(i, 0, 255, 255, 255);
+
+            }
+            if (i>242){
+                zebraColorMap1.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap1.put(i, 0, 255, 255, 255);
+
+            }
+
+
+            if (i>240){
+                zebraColorMap0.put(i, 0, 0, 0, 0);
+
+            } else {
+                zebraColorMap0.put(i, 0, 255, 255, 255);
+
+            }
+        }
+        zebraPatternImages = generateZebraImages();
 
         bluetoothGattCallback = new BluetoothGattCallback() {
             @Override
@@ -313,7 +533,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                             boolean new_state = true;
                             for (boolean be: primaryButtonsStateArray){
                                 if (be == false){new_state = false;
-                                break;}
+                                    break;}
                             }
                             primaryButtonsInitialized = new_state;
                         }
@@ -364,7 +584,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         mCameraHelper.setDefaultFrameFormat(UVCCameraHelper.FRAME_FORMAT_MJPEG);
         mCameraHelper.initUSBMonitor(this, mUVCCameraView, listener);
 
-
         // my contribution
         screenResultionButton = findViewById(R.id.ScreenResolutionButton);
         screenResultionButton.setOnClickListener(new View.OnClickListener() {
@@ -385,18 +604,29 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             }
         });
         // Views declarations
+        ruleOfThirdsImageView = findViewById(R.id.ruleOfThirdsGrid);
+        moreOptionsButton = findViewById(R.id.moreOptionsButton);
+        falseColorToggleButton = findViewById(R.id.falseColorToggleButton);
+        zebraToggleButton = findViewById(R.id.zebraToggleButton);
+        histogramToggleButton = findViewById(R.id.histogramToggleButton);
+        ruleOfThirdsToggleButton = findViewById(R.id.ruleOfThirdsToggleButton);
+        frameGuidesToggleButton = findViewById(R.id.frameGuidesToggleButton);
+        falseColorImageView = findViewById(R.id.imageView2);
         zoomLayout = findViewById(R.id.zoomLayout);
         isoButton = findViewById(R.id.isoButton);
-        batteryImageView = findViewById(R.id.batteryImageView);
-        batteryPercentageTextView = findViewById(R.id.batteryPercentageTextView);
         bottomBarImageView = findViewById(R.id.bottomBarImageView);
         bottomBarImageView.setVisibility(INVISIBLE);
         isoGroup = findViewById(R.id.isoGroup);
+        frameGroup = findViewById(R.id.frameGuideGroup);
         isoValueTextView = findViewById(R.id.isoValueTextView);
         isoValueChangeTextView = findViewById(R.id.isoValueChangeTextView);
         isoSeekBar = findViewById(R.id.isoSeekBar);
+        frameGuideSeekBar = findViewById(R.id.frameGuideSeekBar);
         isoLeftArrowButton = findViewById(R.id.isoLeftArrowButton);
         isoRightArrowButton = findViewById(R.id.isoRightArrowButton);
+        frameGuideLeftArrowButton = findViewById(R.id.frameGuideLeftArrowButton);
+        frameGuideRightArrowButton = findViewById(R.id.frameGuideRightArrowButton);
+        currentFrameGuideTextView = findViewById(R.id.currentFrameGuideTextView);
         wbLeftArrowButton = findViewById(R.id.wbLeftArrowButton);
         wbRightArrowButton = findViewById(R.id.wbRightArrowButton);
         tintLeftArrowButton = findViewById(R.id.tintLeftArrowButton);
@@ -418,8 +648,43 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         irisButton = findViewById(R.id.irisButton);
         cameraSettingsGroup = findViewById(R.id.cameraSettingsGroup);
         reconnectButton = findViewById(R.id.reconnectButton);
-
+        histogramLineChart = findViewById(R.id.histogramLineChart);
         constraintLayout = findViewById(R.id.mainMonitorLayout);
+        falseColorButton = findViewById(R.id.falseColorButton);
+        falseColorTextView = findViewById(R.id.falseColorTextView);
+        zebraButton = findViewById(R.id.zebraButton);
+        zebraTextView = findViewById(R.id.zebraTextView);
+        histogramButton = findViewById(R.id.histogramButton);
+        histogramTextView = findViewById(R.id.histogramTextView);
+        thirdsButton = findViewById(R.id.thirdsButton);
+        thirdsTextView = findViewById(R.id.thirdsTextView);
+        frameGuidesButton = findViewById(R.id.frameGuidesButton);
+        frameGuidesTextView = findViewById(R.id.frameGuidesTextView);
+        moreOptionsGroup = findViewById(R.id.moreOptionsGroup);
+        frameGuideImageView = findViewById(R.id.frameGuideImageView);
+
+        histogramLineChart.setTouchEnabled(false);
+        histogramLineChart.setDragEnabled(false);
+        histogramLineChart.setScaleEnabled(false);
+        histogramLineChart.setScaleXEnabled(false);
+        histogramLineChart.setScaleYEnabled(false);
+        histogramLineChart.setPinchZoom(false);
+        histogramLineChart.setDoubleTapToZoomEnabled(false);
+        histogramLineChart.setHighlightPerDragEnabled(false);
+        histogramLineChart.setHighlightPerTapEnabled(false);
+        histogramLineChart.setDragDecelerationEnabled(false);
+        histogramLineChart.setDrawGridBackground(false);
+        histogramLineChart.getLegend().setEnabled(false);
+        histogramLineChart.getDescription().setEnabled(false);
+        histogramLineChart.getAxisLeft().setEnabled(false);
+        histogramLineChart.getAxisRight().setEnabled(false);
+        histogramLineChart.getXAxis().setEnabled(false);
+        histogramLineChart.getLegend().setEnabled(false);
+        histogramLineChart.setDrawBorders(true);
+        histogramLineChart.invalidate();
+        histogramLineChart.setDrawMarkers(false);
+
+
         // primary buttons onClicklisteners
         constraintLayout.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -430,6 +695,85 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     cameraSettingsGroup.setVisibility(INVISIBLE);
                 } else if (cameraSettingsGroup.getVisibility() == INVISIBLE){
                     cameraSettingsGroup.setVisibility(VISIBLE);
+                }
+            }
+        });
+
+
+        moreOptionsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (moreOptionsGroup.getVisibility() == INVISIBLE){
+                    moreOptionsGroup.setVisibility(VISIBLE);
+                }
+                else {
+                    moreOptionsGroup.setVisibility(INVISIBLE);
+
+                    if (activatedSwitch != null){
+                        activatedSwitch.setVisibility(INVISIBLE);
+                        activatedSwitch = null;
+                    }
+                    frameGroup.setVisibility(INVISIBLE);
+
+                }
+            }
+        });
+
+        falseColorToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    zebraToggleButton.setChecked(false);
+                    displayMode = 1;
+                } else {
+                    displayMode = 0;
+                }
+            }
+        });
+        zebraToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    falseColorToggleButton.setChecked(false);
+                    displayMode = 2;
+                }
+                else {
+                    displayMode = 0;
+                }
+            }
+        });
+        histogramToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    histogramLineChart.setVisibility(VISIBLE);
+
+                }
+                else {
+                    histogramLineChart.setVisibility(INVISIBLE);
+                }
+            }
+        });
+        ruleOfThirdsToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    ruleOfThirdsImageView.setVisibility(VISIBLE);
+                }
+                else{
+                    ruleOfThirdsImageView.setVisibility(INVISIBLE);
+                }
+            }
+        });
+
+        frameGuidesToggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                if (isChecked){
+                    frameGuideImageView.setVisibility(VISIBLE);
+                }
+                else{
+                    frameGuideImageView.setVisibility(INVISIBLE);
                 }
             }
         });
@@ -468,7 +812,48 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                 } else {promptEnableBluetooth();}
             }
         });
-        // Group Buttons Click Listeners
+        // Frame Group Button Listeners
+        frameGuideLeftArrowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGuideSeekBar.setProgress(frameGuideSeekBar.getProgress()-1);
+            }
+        });
+        frameGuideRightArrowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGuideSeekBar.setProgress(frameGuideSeekBar.getProgress()+1);
+            }
+        });
+
+        frameGuideSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                switch (progress){
+                    case 0: frameGuideImageView.setImageResource(R.drawable.frame_16_to_9); currentFrameGuideTextView.setText("16:9"); break;
+                    case 1: frameGuideImageView.setImageResource(R.drawable.frame_2_to_1); currentFrameGuideTextView.setText("2:1"); break;
+
+                    case 2: frameGuideImageView.setImageResource(R.drawable.frame_185_to_1); currentFrameGuideTextView.setText("1.85:1"); break;
+
+                    case 3: frameGuideImageView.setImageResource(R.drawable.frame_14_to_9); currentFrameGuideTextView.setText("14:9"); break;
+
+                    case 4: frameGuideImageView.setImageResource(R.drawable.frame_4_to_3); currentFrameGuideTextView.setText("4:3"); break;
+
+                    case 5: frameGuideImageView.setImageResource(R.drawable.frame_1_to_1); currentFrameGuideTextView.setText("1:1"); break;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
 
         // ISO group buttons Listeners
         isoLeftArrowButton.setOnClickListener(new View.OnClickListener() {
@@ -619,11 +1004,230 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             @Override
             public void onClick(View v) {
                 byte[] bytevalue = BlackMagicCommands.intToByteArray(15, 2);
-                byte[] value = new byte[]{1,6,0,0,0,4,2,0,bytevalue[0], bytevalue[1]};
+                byte[] value = new byte[]{1, 6, 0, 0, 0, 4, 2, 0, bytevalue[0], bytevalue[1]};
                 writeCharacteristic.setValue(value);
                 bluetoothGatt.writeCharacteristic(writeCharacteristic);
             }
         });
+
+        falseColorButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGroup.setVisibility(INVISIBLE);
+                makeSwitchVisible(falseColorToggleButton);
+            }
+        });
+        zebraButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGroup.setVisibility(INVISIBLE);
+                makeSwitchVisible(zebraToggleButton);
+            }
+        });
+        histogramButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGroup.setVisibility(INVISIBLE);
+                makeSwitchVisible(histogramToggleButton);
+            }
+        });
+        thirdsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                frameGroup.setVisibility(INVISIBLE);
+                makeSwitchVisible(ruleOfThirdsToggleButton);
+            }
+        });
+        frameGuidesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                makeSwitchVisible(frameGuidesToggleButton);
+                frameGroup.setVisibility(VISIBLE);
+            }
+        });
+        histogramThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while(true){
+                    if (histogramLineChart.getVisibility() == VISIBLE){
+                        Mat redChannel = new Mat();
+                        Mat greenChannel = new Mat();
+                        Mat blueChannel = new Mat();
+
+                        Core.extractChannel(frameMat, redChannel, 2);
+                        Core.extractChannel(frameMat, greenChannel, 1);
+                        Core.extractChannel(frameMat, blueChannel, 0);
+
+                        Mat histRed = new Mat();
+                        Mat histGreen = new Mat();
+                        Mat histBlue = new Mat();
+
+                        MatOfInt channels = new MatOfInt(0);
+                        MatOfInt histSize = new MatOfInt(256);
+                        MatOfFloat ranges = new MatOfFloat(0, 256);
+
+                        Imgproc.calcHist(Arrays.asList(redChannel), channels, new Mat(), histRed, histSize, ranges);
+                        Imgproc.calcHist(Arrays.asList(greenChannel), channels, new Mat(), histGreen, histSize, ranges);
+                        Imgproc.calcHist(Arrays.asList(blueChannel), channels, new Mat(), histBlue, histSize, ranges);
+
+                        ArrayList valueSetRed = new ArrayList();
+                        ArrayList valueSetGreen = new ArrayList();
+                        ArrayList valueSetBlue = new ArrayList();
+                        for (int i = 0; i < histRed.rows(); i++) {
+                            valueSetRed.add(new Entry(i, (float) histRed.get(i,0)[0]));
+                            valueSetGreen.add(new Entry(i, (float) histGreen.get(i,0)[0]));
+                            valueSetBlue.add(new Entry(i, (float) histBlue.get(i,0)[0]));
+                        }
+                        LineDataSet lineDataSetRed = new LineDataSet(valueSetRed, "red");
+                        lineDataSetRed.setDrawCircles(false);
+                        lineDataSetRed.setColor(Color.rgb(0, 0, 255));
+
+                        LineDataSet lineDataSetGreen = new LineDataSet(valueSetGreen, "green");
+                        lineDataSetGreen.setDrawCircles(false);
+                        lineDataSetGreen.setColor(Color.rgb(0, 255, 0));
+
+                        LineDataSet lineDataSetBlue = new LineDataSet(valueSetBlue, "blue");
+                        lineDataSetBlue.setDrawCircles(false);
+                        lineDataSetBlue.setColor(Color.rgb(255, 0, 0));
+
+                        LineData lineData = new LineData(Arrays.asList(lineDataSetRed, lineDataSetGreen, lineDataSetBlue));
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                histogramLineChart.setData(lineData);
+                                histogramLineChart.notifyDataSetChanged();
+                                histogramLineChart.invalidate();
+                            }
+                        });
+                        try {
+                            Thread.sleep(30);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
+        thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                frameMat = new Mat(1080, 1920, CvType.CV_8UC3);
+                histogramThread.start();
+                while(true){
+                    frameBitmap = mUVCCameraView.captureStillImage(1080,1920);
+                    if (frameBitmap!=null){
+                        Utils.bitmapToMat(frameBitmap, frameMat);
+                        switch(displayMode){
+                            case 0: if (falseColorImageView.getVisibility() == VISIBLE) runOnUiThread(new Runnable() {
+                                @Override
+                                public void run() {
+                                    falseColorImageView.setVisibility(INVISIBLE);
+                                }
+                            });break;
+                            case 1:
+                                if (falseColorImageView.getVisibility() == INVISIBLE){
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            falseColorImageView.setVisibility(VISIBLE);
+                                        }
+                                    });
+                                }
+                                Mat secondOrigin = new Mat(500, 500, CvType.CV_8UC3);
+                                Imgproc.cvtColor(frameMat, secondOrigin, Imgproc.COLOR_RGBA2RGB);
+                                Mat falseColorMat = new Mat(500, 500, CvType.CV_8UC3);
+                                Imgproc.applyColorMap(secondOrigin, falseColorMat, falseColorMap);
+                                Bitmap outBitmap = Bitmap.createBitmap(falseColorMat.width(), falseColorMat.height(), Bitmap.Config.ARGB_8888);
+                                Utils.matToBitmap(falseColorMat, outBitmap);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        falseColorImageView.setImageBitmap(outBitmap);
+                                    }
+                                }); break;
+                            case 2:
+                                if (falseColorImageView.getVisibility() == INVISIBLE){
+                                    runOnUiThread(new Runnable() {
+                                        @Override
+                                        public void run() {
+                                            falseColorImageView.setVisibility(VISIBLE);
+                                        }
+                                    });
+                                }
+
+                                Mat sourceImage2 = new Mat(1080,1920, CvType.CV_8UC3);
+                                Imgproc.cvtColor(frameMat, sourceImage2, Imgproc.COLOR_RGBA2RGB);
+                                // black and white image with black part representing overexposure
+                                Mat zebraArea = new Mat(1080,1920, CvType.CV_8UC3);
+                                Imgproc.applyColorMap(sourceImage2, zebraArea, zebraColorMap2);
+
+                                Mat inverseZebraArea = new Mat(1080, 1920, CvType.CV_8UC3);
+                                Core.bitwise_not(zebraArea, inverseZebraArea);
+
+
+                                Mat deletedOverExposure = new Mat(1080, 1920, CvType.CV_8UC3);
+                                Core.bitwise_and(sourceImage2, zebraArea, deletedOverExposure);
+
+
+
+                                Mat zebraOverLay = new Mat(1080, 1920, CvType.CV_8UC3);
+                                Mat zebraPattern = getNextZebraPattern();
+
+
+                                // Loopers to test importing zebra images instead of computing them each time
+                                /*looperFailedAttempts = 0;
+                                bitwiseFailedAttempts = 0;
+                                for (int x = 0; x<=143; x++){
+                                    Mat newZebraPattern = new Mat(1080, 1920, CvType.CV_8UC3);
+                                    try{
+                                        Imgproc.cvtColor(zebraPattern, newZebraPattern, x);
+                                        try{
+                                            Core.bitwise_and(newZebraPattern, inverseZebraArea, zebraOverLay);
+                                            runOnUiThread(new Runnable() {
+                                                @Override
+                                                public void run() {
+                                                    showToast("yes");
+                                                }
+                                            });
+                                        }
+                                        catch (Exception exception){
+                                            bitwiseFailedAttempts += 1;
+                                        }
+                                    }
+                                    catch(Exception e){
+                                        looperFailedAttempts += 1;
+                                    }
+                                }
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        showToast("looper failed Attempts " + looperFailedAttempts + "\n" +
+                                        "bitwise failed attempts " + bitwiseFailedAttempts);
+                                    }
+                                });*/
+
+
+
+                                Core.bitwise_and(zebraPattern, inverseZebraArea, zebraOverLay);
+
+                                Mat out = new Mat(1080, 1920, CvType.CV_8UC3);
+                                Core.bitwise_or(deletedOverExposure, zebraOverLay, out);
+                                Bitmap outBitmap1 = Bitmap.createBitmap(out.width(), out.height(), Bitmap.Config.ARGB_8888);
+                                Utils.matToBitmap(out, outBitmap1);
+                                runOnUiThread(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        falseColorImageView.setImageBitmap(outBitmap1);
+                                    }
+                                }); break;
+
+                        }
+                    }
+
+                }
+            }
+        });
+        thread.start();
 
     }
 
@@ -701,107 +1305,107 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         }
     }
 
-/*
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_toobar, menu);
-        return true;
-    }
+    /*
+        @Override
+        public boolean onCreateOptionsMenu(Menu menu) {
+            getMenuInflater().inflate(R.menu.main_toobar, menu);
+            return true;
+        }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        switch (item.getItemId()) {
-            case R.id.menu_takepic:
-                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                    showShortMsg("sorry,camera open failed");
-                    return super.onOptionsItemSelected(item);
-                }
-                String picPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/images/"
-                        + System.currentTimeMillis() + UVCCameraHelper.SUFFIX_JPEG;
-
-                mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
-                    @Override
-                    public void onCaptureResult(String path) {
-                        if(TextUtils.isEmpty(path)) {
-                            return;
-                        }
-                        new Handler(getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                Toast.makeText(USBCameraActivity.this, "save path:"+path, Toast.LENGTH_SHORT).show();
-                            }
-                        });
+        @Override
+        public boolean onOptionsItemSelected(MenuItem item) {
+            switch (item.getItemId()) {
+                case R.id.menu_takepic:
+                    if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                        showShortMsg("sorry,camera open failed");
+                        return super.onOptionsItemSelected(item);
                     }
-                });
+                    String picPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/images/"
+                            + System.currentTimeMillis() + UVCCameraHelper.SUFFIX_JPEG;
 
-                break;
-            case R.id.menu_recording:
-                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                    showShortMsg("sorry,camera open failed");
-                    return super.onOptionsItemSelected(item);
-                }
-                if (!mCameraHelper.isPushing()) {
-                    String videoPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/videos/" + System.currentTimeMillis()
-                            + UVCCameraHelper.SUFFIX_MP4;
-
-//                    FileUtils.createfile(FileUtils.ROOT_PATH + "test666.h264");
-                    // if you want to record,please create RecordParams like this
-                    RecordParams params = new RecordParams();
-                    params.setRecordPath(videoPath);
-                    params.setRecordDuration(0);                        // auto divide saved,default 0 means not divided
-                    params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
-
-                    params.setSupportOverlay(true); // overlay only support armeabi-v7a & arm64-v8a
-                    mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
+                    mCameraHelper.capturePicture(picPath, new AbstractUVCCameraHandler.OnCaptureListener() {
                         @Override
-                        public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
-                            // type = 1,h264 video stream
-                            if (type == 1) {
-                                FileUtils.putFileStream(data, offset, length);
-                            }
-                            // type = 0,aac audio stream
-                            if(type == 0) {
-
-                            }
-                        }
-
-                        @Override
-                        public void onRecordResult(String videoPath) {
-                            if(TextUtils.isEmpty(videoPath)) {
+                        public void onCaptureResult(String path) {
+                            if(TextUtils.isEmpty(path)) {
                                 return;
                             }
-                            new Handler(getMainLooper()).post(() -> Toast.makeText(USBCameraActivity.this, "save videoPath:"+videoPath, Toast.LENGTH_SHORT).show());
+                            new Handler(getMainLooper()).post(new Runnable() {
+                                @Override
+                                public void run() {
+                                    Toast.makeText(USBCameraActivity.this, "save path:"+path, Toast.LENGTH_SHORT).show();
+                                }
+                            });
                         }
                     });
-                    // if you only want to push stream,please call like this
-                    // mCameraHelper.startPusher(listener);
-                    showShortMsg("start record...");
-                    mSwitchVoice.setEnabled(false);
-                } else {
-                    FileUtils.releaseFile();
-                    mCameraHelper.stopPusher();
-                    showShortMsg("stop record...");
-                    mSwitchVoice.setEnabled(true);
-                }
-                break;
-            case R.id.menu_resolution:
-                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                    showShortMsg("sorry,camera open failed");
-                    return super.onOptionsItemSelected(item);
-                }
-                showResolutionListDialog();
-                break;
-            case R.id.menu_focus:
-                if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
-                    showShortMsg("sorry,camera open failed");
-                    return super.onOptionsItemSelected(item);
-                }
-                mCameraHelper.startCameraFoucs();
-                break;
+
+                    break;
+                case R.id.menu_recording:
+                    if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                        showShortMsg("sorry,camera open failed");
+                        return super.onOptionsItemSelected(item);
+                    }
+                    if (!mCameraHelper.isPushing()) {
+                        String videoPath = UVCCameraHelper.ROOT_PATH + MyApplication.DIRECTORY_NAME +"/videos/" + System.currentTimeMillis()
+                                + UVCCameraHelper.SUFFIX_MP4;
+
+    //                    FileUtils.createfile(FileUtils.ROOT_PATH + "test666.h264");
+                        // if you want to record,please create RecordParams like this
+                        RecordParams params = new RecordParams();
+                        params.setRecordPath(videoPath);
+                        params.setRecordDuration(0);                        // auto divide saved,default 0 means not divided
+                        params.setVoiceClose(mSwitchVoice.isChecked());    // is close voice
+
+                        params.setSupportOverlay(true); // overlay only support armeabi-v7a & arm64-v8a
+                        mCameraHelper.startPusher(params, new AbstractUVCCameraHandler.OnEncodeResultListener() {
+                            @Override
+                            public void onEncodeResult(byte[] data, int offset, int length, long timestamp, int type) {
+                                // type = 1,h264 video stream
+                                if (type == 1) {
+                                    FileUtils.putFileStream(data, offset, length);
+                                }
+                                // type = 0,aac audio stream
+                                if(type == 0) {
+
+                                }
+                            }
+
+                            @Override
+                            public void onRecordResult(String videoPath) {
+                                if(TextUtils.isEmpty(videoPath)) {
+                                    return;
+                                }
+                                new Handler(getMainLooper()).post(() -> Toast.makeText(USBCameraActivity.this, "save videoPath:"+videoPath, Toast.LENGTH_SHORT).show());
+                            }
+                        });
+                        // if you only want to push stream,please call like this
+                        // mCameraHelper.startPusher(listener);
+                        showShortMsg("start record...");
+                        mSwitchVoice.setEnabled(false);
+                    } else {
+                        FileUtils.releaseFile();
+                        mCameraHelper.stopPusher();
+                        showShortMsg("stop record...");
+                        mSwitchVoice.setEnabled(true);
+                    }
+                    break;
+                case R.id.menu_resolution:
+                    if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                        showShortMsg("sorry,camera open failed");
+                        return super.onOptionsItemSelected(item);
+                    }
+                    showResolutionListDialog();
+                    break;
+                case R.id.menu_focus:
+                    if (mCameraHelper == null || !mCameraHelper.isCameraOpened()) {
+                        showShortMsg("sorry,camera open failed");
+                        return super.onOptionsItemSelected(item);
+                    }
+                    mCameraHelper.startCameraFoucs();
+                    break;
+            }
+            return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
-    }
-*/
+    */
     private void showResolutionListDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(USBCameraActivity.this);
         View rootView = LayoutInflater.from(USBCameraActivity.this).inflate(R.layout.layout_dialog_list, null);
@@ -936,5 +1540,265 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private void showToast(String string){
         Toast toast = Toast.makeText(getApplicationContext(), string, Toast.LENGTH_SHORT);
         toast.show();
+    }
+    public Bitmap loadBitmapFromView(View v) {
+        Bitmap b = Bitmap.createBitmap(v.getWidth() , v.getHeight(), Bitmap.Config.ARGB_8888);
+        Canvas c = new Canvas(b);
+        v.draw(c);
+        return b;
+    }
+    public Bitmap falseColor(Bitmap image) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int colorRed = Color.rgb(255, 0, 0);;
+        int colorYellow = Color.rgb(255, 255, 0);
+        int colorLightGrey = Color.rgb(200, 200, 200);
+        int colorPink = Color.rgb(251, 144, 139);
+        int colorGrey = Color.rgb(100,100,100);
+        int colorGreen = Color.rgb(88, 151, 66);
+        int colorDarkGrey = Color.rgb(40, 40, 40);
+        int colorBlue = Color.rgb(0, 0, 255);
+        int colorMagenta = Color.rgb(100, 0, 100);
+        // Create a new Bitmap object with the same size as the original
+        Bitmap falseColorImage = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+
+        // Iterate over every pixel in the image
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                // Get the pixel color
+                int pixelColor = image.getPixel(x, y);
+                // Extract the red, green, and blue channels
+                int red = Color.red(pixelColor);
+                int green = Color.green(pixelColor);
+                int blue = Color.blue(pixelColor);
+
+                // Calculate the luminance of the pixel
+                double luminance = (0.3 * red) + (0.59 * green) + (0.11 * blue);
+
+                // Set the false color of the pixel based on its luminance
+                int falseColor;
+                if (luminance > 233) {
+                    falseColor = colorRed;
+                } else if (luminance > 227) {
+
+                    falseColor = colorYellow;
+
+                } else if (luminance > 160) {
+                    falseColor = colorLightGrey;
+
+
+                } else if (luminance > 127){
+
+                    falseColor = colorPink;
+
+
+
+
+                }
+                else if (luminance >120){
+                    falseColor = colorGrey;
+                }
+                else if (luminance > 85){
+
+                    falseColor = colorGreen;
+
+
+
+                }
+                else if (luminance > 25.5){
+
+                    falseColor = colorDarkGrey;
+
+
+                }
+                else if (luminance >16){
+
+                    falseColor = colorBlue;
+
+
+                }
+                else {
+
+                    falseColor = colorMagenta;
+
+
+                }
+
+                falseColorImage.setPixel(x, y, falseColor);
+            }
+        }
+
+        return falseColorImage;
+    }
+    public Mat[] generateZebraImages(){
+        Mat[] zebraArray = new Mat[6];
+        int counter = 0;
+        boolean white = true;
+        double[] colorWhite = {255, 255 ,255};
+        double[] colorBlack = {40, 40, 40};
+        Mat zebraPattern = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[0] = zebraPattern;
+        Log.d("Mat Type", String.valueOf(zebraPattern.channels()));
+
+
+        counter = 1;
+        white = true;
+        Mat zebraPattern1 = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern1.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern1.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[1] = zebraPattern1;
+
+        counter = 2;
+        white = true;
+        Mat zebraPattern2 = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern2.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern2.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[2] = zebraPattern2;
+
+
+        counter = 3;
+        white = true;
+        Mat zebraPattern3 = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern3.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern3.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[3] = zebraPattern3;
+
+
+        counter = 1;
+        white = false;
+        Mat zebraPattern4 = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern4.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern4.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[4] = zebraPattern4;
+
+        counter = 2;
+        white = false;
+        Mat zebraPattern5 = new Mat(1080, 1920, CvType.CV_8UC3);
+        for (int x = 0; x <= 1920; x++){
+            if (counter>=3){
+                white = !white;
+                counter = 0;
+            }
+            for (int y = 0; y <=1080; y++){
+                if (white){
+                    zebraPattern5.put(y, x, colorWhite);
+                }
+                else {
+                    zebraPattern5.put(y, x, colorBlack);
+                }
+            }
+            counter += 1;
+        }
+        zebraArray[5] = zebraPattern5;
+
+        /*Mat mat0 = loadResource(getResources(), R.drawable.zebra_pattern_5);
+
+
+
+        zebraArray[0] = mat0;
+        zebraArray[1] = mat0;
+        zebraArray[2] = mat0;
+        zebraArray[3] = mat0;
+        zebraArray[4] = mat0;
+        zebraArray[5] = mat0;*/
+        return zebraArray;
+    }
+    public Mat getNextZebraPattern(){
+        Mat zebra;
+        if (currentZebraIndex<6){
+            zebra = zebraPatternImages[currentZebraIndex];
+            currentZebraIndex += 1;
+        }
+        else {
+            zebra = zebraPatternImages[0];
+            currentZebraIndex = 1;
+        }
+        return zebra;
+    }
+    private void makeSwitchVisible(ToggleButton switchButton){
+        if (activatedSwitch == null){
+            switchButton.setVisibility(VISIBLE);
+            activatedSwitch = switchButton;
+        }
+        else{
+            if (activatedSwitch != switchButton){
+                activatedSwitch.setVisibility(INVISIBLE);
+                switchButton.setVisibility(VISIBLE);
+                activatedSwitch = switchButton;
+            }
+        }
+    }
+    private Mat loadResource(Resources resources, int resId) {
+        Bitmap bitmap = BitmapFactory.decodeResource(resources, resId);
+        Mat mat = new Mat(1080, 1920, CvType.CV_8UC3);
+        Utils.bitmapToMat(bitmap, mat);
+        return mat;
     }
 }

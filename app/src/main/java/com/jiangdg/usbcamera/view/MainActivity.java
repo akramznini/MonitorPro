@@ -10,6 +10,8 @@ import android.widget.ImageButton;
 
 import com.jiangdg.usbcamera.R;
 
+import org.opencv.android.OpenCVLoader;
+
 
 public class MainActivity extends AppCompatActivity {
     private Button blackmagicButton;
