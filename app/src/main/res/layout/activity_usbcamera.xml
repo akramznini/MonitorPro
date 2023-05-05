@@ -149,6 +149,14 @@
                 android:visibility="invisible"
                 tools:visibility="visible" />
 
+            <ImageButton
+                android:id="@+id/falseColorImageView2"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/video_feed"
+                android:visibility="invisible"
+                tools:visibility="invisible" />
+
         </RelativeLayout>
 
     </com.jiangdg.usbcamera.utils.ZoomLayout>
@@ -162,105 +170,65 @@
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="SpeakableTextPresentCheck" />
 
-    <ImageButton
-        android:id="@+id/falseColorButton"
-        android:layout_width="75dp"
-        android:layout_height="50dp"
-        android:background="@drawable/custom_button"
-        app:layout_constraintBottom_toTopOf="@id/falseColorToggleButton"
+    <RadioGroup
+        android:id="@+id/moreOptionsRadioGroup"
+        android:layout_width="wrap_content"
+        android:layout_height="45dp"
+        android:orientation="horizontal"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/bottomBarImageView"
         app:layout_constraintStart_toStartOf="parent"
-        tools:ignore="SpeakableTextPresentCheck" />
+        tools:visibility="visible">
 
-    <TextView
-        android:id="@+id/falseColorTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:text="FALSE\nCOLOR"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/falseColorButton"
-        app:layout_constraintTop_toTopOf="@id/falseColorButton" />
+        <RadioButton
+            android:id="@+id/falseColorButton"
+            android:layout_width="80dp"
+            android:layout_height="45dp"
+            android:background="@drawable/false_color_button"
+            android:button="@drawable/custom_radio_button"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
-    <ImageButton
-        android:id="@+id/zebraButton"
-        android:layout_width="75dp"
-        android:layout_height="50dp"
-        android:background="@drawable/custom_button"
-        app:layout_constraintBottom_toTopOf="@id/falseColorToggleButton"
-        app:layout_constraintStart_toEndOf="@id/falseColorButton"
-        tools:ignore="SpeakableTextPresentCheck" />
+        <RadioButton
+            android:id="@+id/zebraButton"
+            android:layout_width="80dp"
+            android:layout_height="45dp"
+            android:background="@drawable/zebra_button"
+            android:button="@drawable/custom_radio_button"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
-    <TextView
-        android:id="@+id/zebraTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:text="ZEBRA"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/zebraButton"
-        app:layout_constraintTop_toTopOf="@id/zebraButton" />
+        <RadioButton
+            android:id="@+id/histogramButton"
+            android:layout_width="80dp"
+            android:layout_height="45dp"
+            android:background="@drawable/histogram_button"
+            android:button="@drawable/custom_radio_button"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
-    <ImageButton
-        android:id="@+id/histogramButton"
-        android:layout_width="75dp"
-        android:layout_height="50dp"
-        android:background="@drawable/custom_button"
-        app:layout_constraintBottom_toTopOf="@id/falseColorToggleButton"
-        app:layout_constraintStart_toEndOf="@id/zebraButton"
-        tools:ignore="SpeakableTextPresentCheck" />
+        <RadioButton
+            android:id="@+id/thirdsButton"
+            android:layout_width="80dp"
+            android:layout_height="45dp"
+            android:background="@drawable/thirds_button"
+            android:button="@drawable/custom_radio_button"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
 
-    <TextView
-        android:id="@+id/histogramTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:text="HISTO-\nGRAM"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/histogramButton"
-        app:layout_constraintTop_toTopOf="@id/histogramButton" />
+        <RadioButton
+            android:id="@+id/frameGuidesButton"
+            android:layout_width="80dp"
+            android:layout_height="45dp"
+            android:background="@drawable/frame_guides_button"
+            android:button="@drawable/custom_radio_button"
+            tools:ignore="SpeakableTextPresentCheck,TouchTargetSizeCheck" />
+    </RadioGroup>
 
-    <ImageButton
-        android:id="@+id/thirdsButton"
-        android:layout_width="75dp"
-        android:layout_height="50dp"
-        android:background="@drawable/custom_button"
-        app:layout_constraintBottom_toTopOf="@id/falseColorToggleButton"
-        app:layout_constraintStart_toEndOf="@id/histogramButton"
-        tools:ignore="SpeakableTextPresentCheck" />
 
-    <TextView
-        android:id="@+id/thirdsTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:text="THIRDS"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/thirdsButton"
-        app:layout_constraintTop_toTopOf="@id/thirdsButton" />
 
-    <ImageButton
-        android:id="@+id/frameGuidesButton"
-        android:layout_width="75dp"
-        android:layout_height="50dp"
-        android:background="@drawable/custom_button"
-        app:layout_constraintBottom_toTopOf="@id/falseColorToggleButton"
-        app:layout_constraintStart_toEndOf="@id/thirdsButton"
-        tools:ignore="SpeakableTextPresentCheck" />
 
-    <TextView
-        android:id="@+id/frameGuidesTextView"
-        android:layout_width="wrap_content"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:text="FRAME\nGUIDES"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintStart_toStartOf="@id/frameGuidesButton"
-        app:layout_constraintTop_toTopOf="@id/frameGuidesButton" />
+
+
+
+
+
 
     <ToggleButton
         android:id="@+id/falseColorToggleButton"
@@ -273,20 +241,8 @@
         android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        tools:visibility="visible" />
-
-    <ToggleButton
-        android:id="@+id/zebraToggleButton"
-        android:layout_width="64dp"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginBottom="24dp"
-        android:textOff="OFF"
-        android:textOn="ON"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        tools:visibility="visible" />
+        tools:ignore="DuplicateClickableBoundsCheck"
+        tools:visibility="invisible" />
 
     <ToggleButton
         android:id="@+id/histogramToggleButton"
@@ -320,11 +276,12 @@
         android:layout_height="wrap_content"
         android:layout_marginStart="24dp"
         android:layout_marginBottom="24dp"
-        android:visibility="invisible"
         android:textOff="OFF"
         android:textOn="ON"
+        android:visibility="invisible"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
+        tools:ignore="DuplicateClickableBoundsCheck"
         tools:visibility="visible" />
 
     <ImageButton
@@ -527,17 +484,6 @@
         tools:ignore="SpeakableTextPresentCheck"
         tools:visibility="visible" />
 
-    <ImageView
-        android:id="@+id/moreOptionsBottomBar"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:scaleX="100"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="@id/histogramButton"
-        app:srcCompat="@drawable/universal_pressed" />
-
     <TextView
         android:id="@+id/shutterTextView"
         android:layout_width="wrap_content"
@@ -559,16 +505,6 @@
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="@+id/shutterButton"
         app:layout_constraintStart_toStartOf="@+id/shutterButton" />
-
-    <ImageView
-        android:id="@+id/bottomBarImageView"
-        android:layout_width="match_parent"
-        android:layout_height="92dp"
-        android:scaleX="100"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/universal_pressed" />
 
     <SeekBar
         android:id="@+id/isoSeekBar"
@@ -667,6 +603,7 @@
         android:rotationY="180"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="@+id/bottomBarImageView" />
+
     <ImageButton
         android:id="@+id/frameGuideLeftArrowButton"
         android:layout_width="50dp"
@@ -677,6 +614,66 @@
         android:rotationY="180"
         app:layout_constraintBottom_toBottomOf="@id/frameGuidesToggleButton"
         app:layout_constraintStart_toEndOf="@+id/frameGuidesToggleButton" />
+
+    <ToggleButton
+        android:id="@+id/zebraToggleButton"
+        android:layout_width="64dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="24dp"
+        android:textOff="OFF"
+        android:textOn="ON"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        tools:visibility="visible" />
+
+    <TextView
+        android:id="@+id/zebraPercentageTextView"
+        android:layout_width="77dp"
+        android:layout_height="49dp"
+        android:gravity="center"
+        android:text="75%"
+        android:textColor="#FFFFFF"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toBottomOf="@+id/frameGuideLeftArrowButton"
+        app:layout_constraintStart_toEndOf="@+id/frameGuideLeftArrowButton" />
+
+    <SeekBar
+        android:id="@+id/zebraSeekBar"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:max="5"
+        android:progress="0"
+        android:progressDrawable="@drawable/red_scrubber_progress"
+        android:thumb="@drawable/red_scrubber_control"
+        app:layout_constraintBottom_toBottomOf="@id/frameGuideRightArrowButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/frameGuideRightArrowButton" />
+
+    <ImageButton
+        android:id="@+id/zebraRightArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:background="@drawable/custom_arrow_button"
+        app:layout_constraintBottom_toBottomOf="@id/currentFrameGuideTextView"
+        app:layout_constraintStart_toEndOf="@id/currentFrameGuideTextView"
+        tools:ignore="SpeakableTextPresentCheck" />
+
+    <ImageButton
+        android:id="@+id/zebraLeftArrowButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/custom_arrow_button"
+        android:rotationY="180"
+        app:layout_constraintBottom_toBottomOf="@id/frameGuidesToggleButton"
+        app:layout_constraintStart_toEndOf="@+id/frameGuidesToggleButton"
+        tools:ignore="SpeakableTextPresentCheck" />
 
     <ImageButton
         android:id="@+id/wbLeftArrowButton"
@@ -761,6 +758,7 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toEndOf="@+id/isoLeftArrowButton" />
+
     <TextView
         android:id="@+id/currentFrameGuideTextView"
         android:layout_width="77dp"
@@ -774,29 +772,17 @@
         app:layout_constraintBottom_toBottomOf="@+id/frameGuideLeftArrowButton"
         app:layout_constraintStart_toEndOf="@+id/frameGuideLeftArrowButton" />
 
-    <ImageButton
-        android:id="@+id/falseColorImageView2"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="@drawable/video_feed"
-        android:visibility="invisible"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:visibility="invisible" />
-
     <ImageView
-        android:id="@+id/mockView"
+        android:id="@+id/bottomBarImageView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/bottomBarImageView"
+        android:layout_height="80dp"
+        android:scaleX="100"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/shutterButton"
-        app:srcCompat="@drawable/universal_default"
-        tools:visibility="invisible" />
+        app:srcCompat="@drawable/universal_pressed"
+        tools:visibility="visible" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/isoGroup"
@@ -813,6 +799,7 @@
         android:visibility="invisible"
         app:constraint_referenced_ids="frameGuideRightArrowButton,frameGuideLeftArrowButton,currentFrameGuideTextView,frameGuideSeekBar"
         tools:visibility="invisible" />
+
     <androidx.constraintlayout.widget.Group
         android:id="@+id/wbGroup"
         android:layout_width="wrap_content"
@@ -845,12 +832,13 @@
         app:constraint_referenced_ids="cameraDisconnectedtextView,reconnectButton"
         tools:visibility="visible" />
 
+
     <androidx.constraintlayout.widget.Group
-        android:id="@+id/moreOptionsGroup"
+        android:id="@+id/zebraGroup"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:visibility="invisible"
-        app:constraint_referenced_ids="moreOptionsBottomBar, falseColorButton,falseColorTextView,zebraButton,zebraTextView,histogramButton,histogramTextView,thirdsButton,thirdsTextView,frameGuidesButton,frameGuidesTextView"
+        app:constraint_referenced_ids="zebraLeftArrowButton,zebraRightArrowButton,zebraSeekBar,zebraToggleButton,zebraPercentageTextView"
         tools:visibility="visible" />
 
 

@@ -36,6 +36,8 @@ import android.widget.CompoundButton;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -131,6 +133,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private TextView isoValueChangeTextView;
     private SeekBar isoSeekBar;
     private SeekBar frameGuideSeekBar;
+    private SeekBar zebraSeekBar;
     private ImageButton isoLeftArrowButton;
     private ImageButton isoRightArrowButton;
     private ImageButton wbLeftArrowButton;
@@ -150,17 +153,16 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private TextView shutterValueChangeTextView;
     private ImageButton shutterLeftArrowButton;
     private ImageButton shutterRightArrowButton;
-    private ImageButton falseColorButton;
-    private TextView falseColorTextView;
-    private ImageButton zebraButton;
+    private RadioButton falseColorButton;
+    private RadioButton zebraButton;
     private TextView zebraTextView;
-    private ImageButton histogramButton;
+    private RadioButton histogramButton;
     private TextView histogramTextView;
-    private ImageButton thirdsButton;
+    private RadioButton thirdsButton;
     private TextView thirdsTextView;
-    private ImageButton frameGuidesButton;
+    private RadioButton frameGuidesButton;
     private TextView frameGuidesTextView;
-    private Group moreOptionsGroup;
+    private RadioGroup moreOptionsGroup;
     private Group shutterGroup;
     private ImageButton irisButton;
     private Group cameraSettingsGroup;
@@ -175,7 +177,10 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private ToggleButton frameGuidesToggleButton;
     private ImageButton frameGuideLeftArrowButton;
     private ImageButton frameGuideRightArrowButton;
+    private ImageButton zebraLeftArrowButton;
+    private ImageButton zebraRightArrowButton;
     private TextView currentFrameGuideTextView;
+    private TextView currentZebraTextView;
     private ImageView ruleOfThirdsImageView;
     private ImageView frameGuideImageView;
     private int displayMode = 0;
@@ -188,6 +193,14 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private Mat frameMat;
     private boolean histogramThreadStarted = false;
     private Bitmap frameBitmap;
+    private Group zebraGroup;
+    private Mat zebraColorMap0;
+    private Mat zebraColorMap1;
+    private Mat zebraColorMap2;
+    private Mat zebraColorMap3;
+    private Mat zebraColorMap4;
+    private Mat zebraColorMap5;
+    private Mat currentZebraColorMap;
     private int looperFailedAttempts;
     private int bitwiseFailedAttempts;
     private UVCCameraHelper.OnMyDevConnectListener listener = new UVCCameraHelper.OnMyDevConnectListener() {
@@ -266,9 +279,9 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         OpenCVLoader.initDebug();
         Mat falseColorMap = new Mat(256, 1, CvType.CV_8UC3);
         for (int i = 0; i<256; i++){
-            if (i > 233) {
+            if (i > 224) {
                 falseColorMap.put(i, 0, 255, 0, 0);
-            } else if (i > 227) {
+            } else if (i > 210) {
 
                 falseColorMap.put(i, 0, 255, 255, 0);
 
@@ -353,54 +366,58 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
         // 6 Zebra color maps from 75% to 100%
 
+
+
         // 75%
-        Mat zebraColorMap0 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap0 = new Mat(256, 1, CvType.CV_8UC3);
 
         // 80%
-        Mat zebraColorMap1 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap1 = new Mat(256, 1, CvType.CV_8UC3);
 
         // 85%
-        Mat zebraColorMap2 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap2 = new Mat(256, 1, CvType.CV_8UC3);
 
         // 90%
-        Mat zebraColorMap3 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap3 = new Mat(256, 1, CvType.CV_8UC3);
 
         // 95%
-        Mat zebraColorMap4 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap4 = new Mat(256, 1, CvType.CV_8UC3);
 
         //100%
-        Mat zebraColorMap5 = new Mat(256, 1, CvType.CV_8UC3);
+        zebraColorMap5 = new Mat(256, 1, CvType.CV_8UC3);
+
+        currentZebraColorMap = zebraColorMap0;
 
         for (int i = 0; i<256; i++){
-            if (i>246){
+            if (i>224){
                 zebraColorMap5.put(i, 0, 0, 0, 0);
 
             } else {
                 zebraColorMap5.put(i, 0, 255, 255, 255);
 
             }
-            if (i>245){
+            if (i>222){
                 zebraColorMap4.put(i, 0, 0, 0, 0);
 
             } else {
                 zebraColorMap4.put(i, 0, 255, 255, 255);
 
             }
-            if (i>244){
+            if (i>221){
                 zebraColorMap3.put(i, 0, 0, 0, 0);
 
             } else {
                 zebraColorMap3.put(i, 0, 255, 255, 255);
 
             }
-            if (i>243){
+            if (i>220){
                 zebraColorMap2.put(i, 0, 0, 0, 0);
 
             } else {
                 zebraColorMap2.put(i, 0, 255, 255, 255);
 
             }
-            if (i>242){
+            if (i>219){
                 zebraColorMap1.put(i, 0, 0, 0, 0);
 
             } else {
@@ -409,7 +426,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             }
 
 
-            if (i>240){
+            if (i>218){
                 zebraColorMap0.put(i, 0, 0, 0, 0);
 
             } else {
@@ -607,6 +624,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         ruleOfThirdsImageView = findViewById(R.id.ruleOfThirdsGrid);
         moreOptionsButton = findViewById(R.id.moreOptionsButton);
         falseColorToggleButton = findViewById(R.id.falseColorToggleButton);
+        zebraGroup = findViewById(R.id.zebraGroup);
         zebraToggleButton = findViewById(R.id.zebraToggleButton);
         histogramToggleButton = findViewById(R.id.histogramToggleButton);
         ruleOfThirdsToggleButton = findViewById(R.id.ruleOfThirdsToggleButton);
@@ -622,11 +640,16 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         isoValueChangeTextView = findViewById(R.id.isoValueChangeTextView);
         isoSeekBar = findViewById(R.id.isoSeekBar);
         frameGuideSeekBar = findViewById(R.id.frameGuideSeekBar);
+        zebraSeekBar = findViewById(R.id.zebraSeekBar);
         isoLeftArrowButton = findViewById(R.id.isoLeftArrowButton);
         isoRightArrowButton = findViewById(R.id.isoRightArrowButton);
         frameGuideLeftArrowButton = findViewById(R.id.frameGuideLeftArrowButton);
         frameGuideRightArrowButton = findViewById(R.id.frameGuideRightArrowButton);
+        zebraLeftArrowButton =  findViewById(R.id.zebraLeftArrowButton);
+        zebraRightArrowButton = findViewById(R.id.zebraRightArrowButton);
+
         currentFrameGuideTextView = findViewById(R.id.currentFrameGuideTextView);
+        currentZebraTextView = findViewById(R.id.zebraPercentageTextView);
         wbLeftArrowButton = findViewById(R.id.wbLeftArrowButton);
         wbRightArrowButton = findViewById(R.id.wbRightArrowButton);
         tintLeftArrowButton = findViewById(R.id.tintLeftArrowButton);
@@ -651,16 +674,15 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         histogramLineChart = findViewById(R.id.histogramLineChart);
         constraintLayout = findViewById(R.id.mainMonitorLayout);
         falseColorButton = findViewById(R.id.falseColorButton);
-        falseColorTextView = findViewById(R.id.falseColorTextView);
         zebraButton = findViewById(R.id.zebraButton);
-        zebraTextView = findViewById(R.id.zebraTextView);
+
         histogramButton = findViewById(R.id.histogramButton);
-        histogramTextView = findViewById(R.id.histogramTextView);
+
         thirdsButton = findViewById(R.id.thirdsButton);
-        thirdsTextView = findViewById(R.id.thirdsTextView);
+
         frameGuidesButton = findViewById(R.id.frameGuidesButton);
-        frameGuidesTextView = findViewById(R.id.frameGuidesTextView);
-        moreOptionsGroup = findViewById(R.id.moreOptionsGroup);
+
+        moreOptionsGroup = findViewById(R.id.moreOptionsRadioGroup);
         frameGuideImageView = findViewById(R.id.frameGuideImageView);
 
         histogramLineChart.setTouchEnabled(false);
@@ -705,6 +727,8 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             public void onClick(View v) {
                 if (moreOptionsGroup.getVisibility() == INVISIBLE){
                     moreOptionsGroup.setVisibility(VISIBLE);
+                    makeSwitchVisible(falseColorToggleButton);
+                    falseColorButton.setChecked(true);
                 }
                 else {
                     moreOptionsGroup.setVisibility(INVISIBLE);
@@ -714,6 +738,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                         activatedSwitch = null;
                     }
                     frameGroup.setVisibility(INVISIBLE);
+                    zebraGroup.setVisibility(INVISIBLE);
 
                 }
             }
@@ -826,6 +851,20 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             }
         });
 
+        // Zebra Button Listeners
+        zebraLeftArrowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                zebraSeekBar.setProgress(zebraSeekBar.getProgress()-1);
+            }
+        });
+        zebraRightArrowButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                zebraSeekBar.setProgress(zebraSeekBar.getProgress()+1);
+            }
+        });
+
         frameGuideSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
@@ -840,6 +879,30 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                     case 4: frameGuideImageView.setImageResource(R.drawable.frame_4_to_3); currentFrameGuideTextView.setText("4:3"); break;
 
                     case 5: frameGuideImageView.setImageResource(R.drawable.frame_1_to_1); currentFrameGuideTextView.setText("1:1"); break;
+                }
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+
+            }
+        });
+
+        zebraSeekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                switch(progress){
+                    case 0: currentZebraTextView.setText("75%"); currentZebraColorMap = zebraColorMap0; break;
+                    case 1: currentZebraTextView.setText("80%"); currentZebraColorMap = zebraColorMap1; break;
+                    case 2: currentZebraTextView.setText("85%"); currentZebraColorMap = zebraColorMap2; break;
+                    case 3: currentZebraTextView.setText("90%"); currentZebraColorMap = zebraColorMap3; break;
+                    case 4: currentZebraTextView.setText("95%"); currentZebraColorMap = zebraColorMap4; break;
+                    case 5: currentZebraTextView.setText("100%"); currentZebraColorMap = zebraColorMap5; break;
                 }
             }
 
@@ -1010,10 +1073,12 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             }
         });
 
+
         falseColorButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 frameGroup.setVisibility(INVISIBLE);
+                zebraGroup.setVisibility(INVISIBLE);
                 makeSwitchVisible(falseColorToggleButton);
             }
         });
@@ -1021,6 +1086,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             @Override
             public void onClick(View v) {
                 frameGroup.setVisibility(INVISIBLE);
+                zebraGroup.setVisibility(VISIBLE);
                 makeSwitchVisible(zebraToggleButton);
             }
         });
@@ -1028,6 +1094,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             @Override
             public void onClick(View v) {
                 frameGroup.setVisibility(INVISIBLE);
+                zebraGroup.setVisibility(INVISIBLE);
                 makeSwitchVisible(histogramToggleButton);
             }
         });
@@ -1035,6 +1102,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             @Override
             public void onClick(View v) {
                 frameGroup.setVisibility(INVISIBLE);
+                zebraGroup.setVisibility(INVISIBLE);
                 makeSwitchVisible(ruleOfThirdsToggleButton);
             }
         });
@@ -1043,6 +1111,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             public void onClick(View v) {
                 makeSwitchVisible(frameGuidesToggleButton);
                 frameGroup.setVisibility(VISIBLE);
+                zebraGroup.setVisibility(INVISIBLE);
             }
         });
         histogramThread = new Thread(new Runnable() {
@@ -1159,7 +1228,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
                                 Imgproc.cvtColor(frameMat, sourceImage2, Imgproc.COLOR_RGBA2RGB);
                                 // black and white image with black part representing overexposure
                                 Mat zebraArea = new Mat(1080,1920, CvType.CV_8UC3);
-                                Imgproc.applyColorMap(sourceImage2, zebraArea, zebraColorMap2);
+                                Imgproc.applyColorMap(sourceImage2, zebraArea, currentZebraColorMap);
 
                                 Mat inverseZebraArea = new Mat(1080, 1920, CvType.CV_8UC3);
                                 Core.bitwise_not(zebraArea, inverseZebraArea);
