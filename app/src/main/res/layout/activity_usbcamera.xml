@@ -18,6 +18,7 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+
     <LinearLayout
         android:id="@+id/llayout_contrast"
         android:layout_width="match_parent"
@@ -105,6 +106,7 @@
         app:layout_constraintTop_toTopOf="parent">
 
         <RelativeLayout
+            android:id="@+id/relativeLayout"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
@@ -169,6 +171,32 @@
         app:layout_constraintStart_toEndOf="@+id/ScreenResolutionButton"
         app:layout_constraintTop_toTopOf="parent"
         tools:ignore="SpeakableTextPresentCheck" />
+
+
+    <ImageView
+        android:id="@+id/testView"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:scaleX="100"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@id/bottomBarImageView"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ScreenResolutionButton"
+        app:srcCompat="@drawable/universal_default"
+        tools:visibility="visible" />
+
+    <ImageView
+        android:id="@+id/bottomBarImageView"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:scaleX="100"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:srcCompat="@drawable/universal_pressed"
+        tools:visibility="visible" />
 
     <RadioGroup
         android:id="@+id/moreOptionsRadioGroup"
@@ -771,18 +799,6 @@
         android:textStyle="bold"
         app:layout_constraintBottom_toBottomOf="@+id/frameGuideLeftArrowButton"
         app:layout_constraintStart_toEndOf="@+id/frameGuideLeftArrowButton" />
-
-    <ImageView
-        android:id="@+id/bottomBarImageView"
-        android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:scaleX="100"
-        android:visibility="visible"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:srcCompat="@drawable/universal_pressed"
-        tools:visibility="visible" />
 
     <androidx.constraintlayout.widget.Group
         android:id="@+id/isoGroup"

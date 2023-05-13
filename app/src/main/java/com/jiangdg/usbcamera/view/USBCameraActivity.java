@@ -38,6 +38,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
 import android.widget.SeekBar;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -112,6 +113,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     BluetoothAdapter bluetoothAdapter;
     private Thread thread;
     private Thread histogramThread;
+    private ImageView testView;
     private ImageView falseColorImageView;
     private ImageButton screenResultionButton;
     private ImageButton isoButton;
@@ -119,7 +121,7 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private TextView batteryPercentageTextView;
     private boolean batteryImageViewStatus;
     private ImageView bottomBarImageView;
-    private Group activeGroup;
+    private View activeGroup;
     private boolean groupActivated;
     private Group isoGroup;
     private Group frameGroup;
@@ -186,7 +188,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
     private int displayMode = 0;
     private boolean[] primaryButtonsStateArray = new boolean[3];
     private boolean primaryButtonsInitialized = false;
-    private ConstraintLayout constraintLayout;
     private Mat[] zebraPatternImages;
     private int currentZebraIndex = 0;
     private LineChart histogramLineChart;
@@ -629,11 +630,11 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         histogramToggleButton = findViewById(R.id.histogramToggleButton);
         ruleOfThirdsToggleButton = findViewById(R.id.ruleOfThirdsToggleButton);
         frameGuidesToggleButton = findViewById(R.id.frameGuidesToggleButton);
+        testView = findViewById(R.id.testView);
         falseColorImageView = findViewById(R.id.imageView2);
         zoomLayout = findViewById(R.id.zoomLayout);
         isoButton = findViewById(R.id.isoButton);
         bottomBarImageView = findViewById(R.id.bottomBarImageView);
-        bottomBarImageView.setVisibility(INVISIBLE);
         isoGroup = findViewById(R.id.isoGroup);
         frameGroup = findViewById(R.id.frameGuideGroup);
         isoValueTextView = findViewById(R.id.isoValueTextView);
@@ -672,7 +673,6 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
         cameraSettingsGroup = findViewById(R.id.cameraSettingsGroup);
         reconnectButton = findViewById(R.id.reconnectButton);
         histogramLineChart = findViewById(R.id.histogramLineChart);
-        constraintLayout = findViewById(R.id.mainMonitorLayout);
         falseColorButton = findViewById(R.id.falseColorButton);
         zebraButton = findViewById(R.id.zebraButton);
 
@@ -708,16 +708,10 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
 
 
         // primary buttons onClicklisteners
-        constraintLayout.setOnClickListener(new View.OnClickListener() {
+        testView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (groupActivated){
-                    disableGroup();
-                } else if (cameraSettingsGroup.getVisibility() == VISIBLE){
-                    cameraSettingsGroup.setVisibility(INVISIBLE);
-                } else if (cameraSettingsGroup.getVisibility() == INVISIBLE){
-                    cameraSettingsGroup.setVisibility(VISIBLE);
-                }
+                disableGroup();
             }
         });
 
@@ -726,20 +720,10 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             @Override
             public void onClick(View v) {
                 if (moreOptionsGroup.getVisibility() == INVISIBLE){
-                    moreOptionsGroup.setVisibility(VISIBLE);
-                    makeSwitchVisible(falseColorToggleButton);
-                    falseColorButton.setChecked(true);
+                    enableGroup(moreOptionsGroup);
                 }
                 else {
-                    moreOptionsGroup.setVisibility(INVISIBLE);
-
-                    if (activatedSwitch != null){
-                        activatedSwitch.setVisibility(INVISIBLE);
-                        activatedSwitch = null;
-                    }
-                    frameGroup.setVisibility(INVISIBLE);
-                    zebraGroup.setVisibility(INVISIBLE);
-
+                    disableGroup();
                 }
             }
         });
@@ -1570,22 +1554,36 @@ public class USBCameraActivity extends AppCompatActivity implements CameraDialog
             isPreview = false;
         }
     }
-    private void enableGroup(Group group){
+    private void enableGroup(View group){
         if(!groupActivated){
             bottomBarImageView.setVisibility(View.VISIBLE);
+            testView.setVisibility(VISIBLE);
             groupActivated = true;
         } else {
             activeGroup.setVisibility(INVISIBLE);
         }
         group.setVisibility(View.VISIBLE);
+        if(group == moreOptionsGroup){
+            makeSwitchVisible(falseColorToggleButton);
+            falseColorButton.setChecked(true);
+        }
         activeGroup = group;
     }
     private void disableGroup(){
         if (activeGroup != null){
             activeGroup.setVisibility(INVISIBLE);
+            if(activeGroup == moreOptionsGroup){
+                if (activatedSwitch != null){
+                    activatedSwitch.setVisibility(INVISIBLE);
+                    activatedSwitch = null;
+                }
+                frameGroup.setVisibility(INVISIBLE);
+                zebraGroup.setVisibility(INVISIBLE);
+            }
         }
 
         bottomBarImageView.setVisibility(INVISIBLE);
+        testView.setVisibility(INVISIBLE);
         groupActivated = false;
     }
     private void promptEnableBluetooth() {
